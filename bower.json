@@ -1,0 +1,25 @@
+{
+  "name": "nusic",
+  "version": "0.0.1",
+  "authors": [
+    "Joseph Wolschon <joseph.wolschon@gmail.com>"
+  ],
+  "description": "New music from around the world!",
+  "keywords": [
+    "music",
+    "new"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "three.js": "*",
+    "angular": "~1.3.14"
+  }
+}

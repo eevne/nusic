@@ -1,0 +1,1 @@
+angular.module('nusic.app.globe', []);
