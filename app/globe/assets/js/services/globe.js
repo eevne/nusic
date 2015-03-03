@@ -1,4 +1,4 @@
-angular.module('nusic.app.globe').service('globe', function(continents, country, coast) {
+angular.module('nusic.app.globe').service('globe', function(continents, country, coast, atmosphere, data, $log) {
     
    this.createGlobe = function(container, colorFn){
 
@@ -38,25 +38,10 @@ angular.module('nusic.app.globe').service('globe', function(continents, country,
 
            var PI_HALF = Math.PI / 2;
 
-           function modelLoader() {
-               loader = new THREE.JSONLoader();
-               loader.load({ model:pointModel, callback: function(g) {
-                   pointGeo = g;
-                   gridLoader()
-               }});
-           }
-           function gridLoader() {
-               loader = new THREE.JSONLoader();
-               loader.load({ model: gridModel, callback: function(g) {
-                   gridGeo = g;
-                   init();
-                   createPoints();
-               }});
-           }
 
            function init() {
                var Shaders2 = {
-                   'atmosphere' : {
+                   'atmosphere': {
                        uniforms: {},
                        vertexShader: [
                            'varying vec3 vNormal;',
@@ -75,7 +60,7 @@ angular.module('nusic.app.globe').service('globe', function(continents, country,
                        ].join('\n')
                    },
 
-                   'continents' : {
+                   'continents': {
                        uniforms: {},
                        vertexShader: [
                            'varying vec3 vNormal;',
@@ -97,6 +82,14 @@ angular.module('nusic.app.globe').service('globe', function(continents, country,
                    }
                };
 
+               data.getCoast().then(function(response)
+               {
+                   $log.log('ok', response);
+               }, function()
+               {
+                   $log.log('bad');
+                   
+               });
                container.style.color = '#fff';
                container.style.font = '13px/20px Arial, sans-serif';
 
@@ -122,19 +115,9 @@ angular.module('nusic.app.globe').service('globe', function(continents, country,
                    fragmentShader: continentsShader.fragmentShader
                });
                // add continents on top of black earth sphere
-               scene.addObject(loadTriMesh(continents.getContinents(), continentsMaterial));
-
-               scene.addObject(loadLineMesh(country.getCountries(),
-                   new THREE.LineBasicMaterial({
-                       linewidth: 1,
-                       color: 0xffffff, opacity: 1
-                   }), 0.1));
-
-               scene.addObject(loadLineMesh(coast.getCoast(),
-                   new THREE.LineBasicMaterial({
-                       linewidth: 1,
-                       color: 0xffffff, opacity: 1
-                   }), 0.1));
+               scene.addObject(continents.create());
+               scene.addObject(country.create());
+               scene.addObject(coast.create());
 
                var geometry = new THREE.Sphere(200, 40, 30);
 
@@ -193,150 +176,15 @@ angular.module('nusic.app.globe').service('globe', function(continents, country,
 
                window.addEventListener('resize', onWindowResize, false);
 
-               container.addEventListener('mouseover', function() {
+               container.addEventListener('mouseover', function () {
                    overRenderer = true;
                }, false);
 
-               container.addEventListener('mouseout', function() {
+               container.addEventListener('mouseout', function () {
                    overRenderer = false;
                }, false);
 
                animate();
-           }
-       /* Load a triangle mesh (continents), spherize and scale it to globe size */
-       function loadTriMesh(loader, material) {
-           var coords = loader.children[0].children[0].attributes.Vertex.elements;
-           var lineGeo = new THREE.Geometry();
-           var i = 0;
-           var lines = [];
-           for (i=0; i<coords.length; i+=3) {
-               lines.push(new THREE.Vector3(coords[i], coords[i+1], coords[i+2]));
-           }
-           lines = spherizeTris(lines, 1/64);
-           for (i=0; i<lines.length; i++) {
-               lineGeo.vertices.push(new THREE.Vertex(lines[i]));
-           }
-           for (i=0; i<lines.length; i+=3) {
-               lineGeo.faces.push(new THREE.Face3(i, i+1, i+2, null, null));
-           }
-           lineGeo.computeCentroids();
-           lineGeo.computeFaceNormals();
-           lineGeo.computeVertexNormals();
-           lineGeo.computeBoundingSphere();
-           var lineMesh = new THREE.Mesh(lineGeo, material);
-           lineMesh.type = THREE.Triangles;
-           lineMesh.scale.x = lineMesh.scale.y = lineMesh.scale.z = 0.0000315;
-           lineMesh.rotation.x = -Math.PI/2;
-           lineMesh.rotation.z = Math.PI;
-           lineMesh.matrixAutoUpdate = false;
-           lineMesh.doubleSided = true;
-           lineMesh.updateMatrix();
-           return lineMesh;
-       }
-
-       /* Load an outline mesh (country borders, continent outlines), spherize
-        * and scale it to globe size */
-       function loadLineMesh(loader, material, offset) {
-           var coords = loader.children[0].children[0].attributes.Vertex.elements;
-           var lines = [];
-           for (i=0; i<coords.length; i+=3) {
-               lines.push(new THREE.Vector3(coords[i], coords[i+1], coords[i+2]));
-           }
-           lines = spherizeLines(lines, 1/64);
-           var lineGeo = new THREE.Geometry();
-           for (var i=0; i<lines.length; i++) {
-               lineGeo.vertices.push(new THREE.Vertex(lines[i]));
-           }
-           var lineMesh = new THREE.Line(lineGeo, material);
-           lineMesh.type = THREE.Lines;
-           lineMesh.scale.x = lineMesh.scale.y = lineMesh.scale.z = 0.0000315 + offset*0.0000001;
-           lineMesh.rotation.x = -Math.PI/2;
-           lineMesh.rotation.z = Math.PI;
-           lineMesh.matrixAutoUpdate = false;
-           lineMesh.updateMatrix();
-           return lineMesh;
-       }
-
-       function createPoints() {
-
-               var subgeo = new THREE.Geometry();
-
-               for (i = 0; i < gridGeo.vertices.length; i ++) {
-                   var x = gridGeo.vertices[i].position.x;
-                   var y = gridGeo.vertices[i].position.y;
-                   var z = gridGeo.vertices[i].position.z;
-
-
-                   var r;
-                   var theta;
-                   var phi;
-                   theta = Math.acos(y/200)/Math.PI;
-                   phi = ((Math.atan2(z,-x))+Math.PI)/(Math.PI*2);
-                   addPoint(x,y,z,phi,theta, subgeo);
-               }
-
-               if (pointType == ('sphere')){
-                   subgeo.computeCentroids();
-                   subgeo.computeFaceNormals();
-                   subgeo.computeVertexNormals();
-               }
-
-               this._baseGeometry = subgeo;
-
-               this.shader = Shaders['data'];
-               this.uniforms = THREE.UniformsUtils.clone(this.shader.uniforms);
-
-               this.uniforms['texture'].texture = THREE.ImageUtils.loadTexture(imgDir+'worldMask' + '.jpg');
-               this.uniforms['textureData'].texture = THREE.ImageUtils.loadTexture(imgDir+'worldDataSample' + '.jpg');
-               this.uniforms['extrudeMin'].value = pointExtrudeRange[0];
-               this.uniforms['extrudeMax'].value = pointExtrudeRange[1];
-
-               this.material = new THREE.MeshShaderMaterial({
-
-                   uniforms: this.uniforms,
-                   vertexShader: this.shader.vertexShader,
-                   fragmentShader: this.shader.fragmentShader,
-                   color: 0xffffff,
-                   vertexColors: THREE.FaceColors
-
-               });
-
-               this.points = new THREE.Mesh(this._baseGeometry, this.material);
-               this.points.doubleSided = false;
-               scene.addObject(this.points);
-           }
-
-           function addPoint(x,y,z,u,v, subgeo) {
-
-               point.position.x = x;
-               point.position.y = y;
-               point.position.z = z;
-
-               point.scale.set(pointScale, pointScale, 1);
-
-               point.lookAt(mesh.position);
-
-               point.updateMatrix();
-
-               var i,j;
-               for (i = 0; i < point.geometry.faces.length; i++) {
-
-                   for (j = 0; j < point.geometry.faces[i].vertexNormals.length; j++) {
-
-                       var len = point.geometry.faces[i].vertexNormals[j].length();
-                       point.geometry.faces[i].vertexNormals[j] = new THREE.Vector3(x/200*len,y/200*len,z/200*len);
-
-                   }
-
-               }
-               for (i = 0; i < point.geometry.faceVertexUvs[0].length; i++) {
-
-                   for (j = 0; j < point.geometry.faceVertexUvs[0][i].length; j++) {
-                       point.geometry.faceVertexUvs[0][i][j] = new THREE.UV( u,v );
-                   }
-
-               }
-               GeometryUtils.merge(subgeo, point);
            }
 
            function onMouseDown(event) {
@@ -437,11 +285,10 @@ angular.module('nusic.app.globe').service('globe', function(continents, country,
                renderer.render(sceneAtmosphere, camera);
            }
 
-           this.createPoints = createPoints;
+
            this.renderer = renderer;
            this.scene = scene;
            this.animate = animate;
-           this.modelLoader = modelLoader;
            this.init = init;
            return this;
 

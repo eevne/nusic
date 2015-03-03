@@ -1,5 +1,5 @@
 angular.module('nusic.app.globe').service('coast', function(){
-    this.getCoast = function(){
+    var getCoast_ = function(){
         return {
             "children": [
                 {
@@ -36,5 +36,14 @@ angular.module('nusic.app.globe').service('coast', function(){
                 }
             ]
         };
+    };
+    
+    this.create = function()
+    {
+        return loadLineMesh(getCoast_(),
+            new THREE.LineBasicMaterial({
+                linewidth: 1,
+                color: 0xffffff, opacity: 1
+            }), 0.1);
     };
 });

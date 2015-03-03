@@ -1,6 +1,6 @@
 angular.module('nusic.app.globe').service('country', function () {
 
-    this.getCountries = function () {
+    var getCountries_ = function () {
         return {
             "children": [{
                 "children": [{
@@ -34,5 +34,15 @@ angular.module('nusic.app.globe').service('country', function () {
             }
             ]
         };
-    }
+    };
+    
+    
+    this.create = function()
+    {
+        return loadLineMesh(getCountries_(),
+            new THREE.LineBasicMaterial({
+                linewidth: 1,
+                color: 0xffffff, opacity: 1
+            }), 0.1);
+    };
 });
