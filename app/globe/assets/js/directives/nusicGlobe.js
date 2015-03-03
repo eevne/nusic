@@ -7,11 +7,12 @@ angular.module('nusic.app.globe').directive('nusicGlobe', function (continents, 
         },
         link: function (scope, element) {
 
-            var globe = globe.createGlobe(element[0]);
+            var globe3d = globe.createGlobe(element[0]);
 
 
+            globe3d.init();
 
-            globe.animate();
+            globe3d.animate();
         }
     }
 

@@ -1,6 +1,6 @@
-angular.module('nusic.app.globe').service('globe', function() {
+angular.module('nusic.app.globe').service('globe', function(continents, country, coast) {
     
-   this.createGlobe = function(continer, colorFn){
+   this.createGlobe = function(container, colorFn){
 
 
            colorFn = colorFn || function(x) {
@@ -55,6 +55,47 @@ angular.module('nusic.app.globe').service('globe', function() {
            }
 
            function init() {
+               var Shaders2 = {
+                   'atmosphere' : {
+                       uniforms: {},
+                       vertexShader: [
+                           'varying vec3 vNormal;',
+                           'void main() {',
+                           'vNormal = normalize( normalMatrix * normal );',
+                           'gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
+                           '}'
+                       ].join('\n'),
+                       fragmentShader: [
+                           'varying vec3 vNormal;',
+                           'void main() {',
+                           'float intensity = pow( 0.5 - dot( vNormal, vec3( 0.0, 0.0, 1.0 ) ), 8.0 );',
+                           'gl_FragColor = vec4(1.0);',
+                           'gl_FragColor.a = pow(intensity*0.8, 2.0);',
+                           '}'
+                       ].join('\n')
+                   },
+
+                   'continents' : {
+                       uniforms: {},
+                       vertexShader: [
+                           'varying vec3 vNormal;',
+                           'void main() {',
+                           'vec4 pos = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );',
+                           'vNormal = normalize( normalMatrix * normalize( position ));',
+                           'gl_Position = pos;',
+                           '}'
+                       ].join('\n'),
+                       fragmentShader: [
+                           'varying vec3 vNormal;',
+                           'void main() {',
+                           'float i = pow(clamp(dot( vNormal, normalize(vec3( 0.0, 2.0, 1.0 ))), 0.0, 1.0), 1.5);',
+                           'float i2 = 0.8-pow(clamp(dot( vNormal, normalize(vec3( 0.0, -0.0, 1.0 ))), 0.0, 1.0), 1.7);',
+                           'gl_FragColor = vec4(0.8, 0.85, 0.9, 1.0) * vec4(i*i*i+0.0*clamp(i2,0.0,1.0));',
+                           'gl_FragColor.a = 1.0;',
+                           '}'
+                       ].join('\n')
+                   }
+               };
 
                container.style.color = '#fff';
                container.style.font = '13px/20px Arial, sans-serif';
@@ -72,19 +113,43 @@ angular.module('nusic.app.globe').service('globe', function() {
                scene = new THREE.Scene();
                sceneAtmosphere = new THREE.Scene();
 
+               var continentsShader = Shaders2['continents'];
+               var continentsUniforms = THREE.UniformsUtils.clone(continentsShader.uniforms);
+
+               var continentsMaterial = new THREE.MeshShaderMaterial({
+                   uniforms: continentsUniforms,
+                   vertexShader: continentsShader.vertexShader,
+                   fragmentShader: continentsShader.fragmentShader
+               });
+               // add continents on top of black earth sphere
+               scene.addObject(loadTriMesh(continents.getContinents(), continentsMaterial));
+
+               scene.addObject(loadLineMesh(country.getCountries(),
+                   new THREE.LineBasicMaterial({
+                       linewidth: 1,
+                       color: 0xffffff, opacity: 1
+                   }), 0.1));
+
+               scene.addObject(loadLineMesh(coast.getCoast(),
+                   new THREE.LineBasicMaterial({
+                       linewidth: 1,
+                       color: 0xffffff, opacity: 1
+                   }), 0.1));
+
                var geometry = new THREE.Sphere(200, 40, 30);
 
                shader = Shaders['earth'];
                uniforms = THREE.UniformsUtils.clone(shader.uniforms);
 
-               uniforms['texture'].texture = THREE.ImageUtils.loadTexture(imgDir+'world' + '.jpg');
+               //uniforms['texture'].texture = THREE.ImageUtils.loadTexture(imgDir+'world' + '.jpg');
 
                material = new THREE.MeshShaderMaterial({
-
                    uniforms: uniforms,
                    vertexShader: shader.vertexShader,
-                   fragmentShader: shader.fragmentShader
+                   fragmentShader: shader.fragmentShader,
+                   attributes: {
 
+                   }
                });
 
                mesh = new THREE.Mesh(geometry, material);
@@ -138,11 +203,63 @@ angular.module('nusic.app.globe').service('globe', function() {
 
                animate();
            }
+       /* Load a triangle mesh (continents), spherize and scale it to globe size */
+       function loadTriMesh(loader, material) {
+           var coords = loader.children[0].children[0].attributes.Vertex.elements;
+           var lineGeo = new THREE.Geometry();
+           var i = 0;
+           var lines = [];
+           for (i=0; i<coords.length; i+=3) {
+               lines.push(new THREE.Vector3(coords[i], coords[i+1], coords[i+2]));
+           }
+           lines = spherizeTris(lines, 1/64);
+           for (i=0; i<lines.length; i++) {
+               lineGeo.vertices.push(new THREE.Vertex(lines[i]));
+           }
+           for (i=0; i<lines.length; i+=3) {
+               lineGeo.faces.push(new THREE.Face3(i, i+1, i+2, null, null));
+           }
+           lineGeo.computeCentroids();
+           lineGeo.computeFaceNormals();
+           lineGeo.computeVertexNormals();
+           lineGeo.computeBoundingSphere();
+           var lineMesh = new THREE.Mesh(lineGeo, material);
+           lineMesh.type = THREE.Triangles;
+           lineMesh.scale.x = lineMesh.scale.y = lineMesh.scale.z = 0.0000315;
+           lineMesh.rotation.x = -Math.PI/2;
+           lineMesh.rotation.z = Math.PI;
+           lineMesh.matrixAutoUpdate = false;
+           lineMesh.doubleSided = true;
+           lineMesh.updateMatrix();
+           return lineMesh;
+       }
 
-           function createPoints() {
+       /* Load an outline mesh (country borders, continent outlines), spherize
+        * and scale it to globe size */
+       function loadLineMesh(loader, material, offset) {
+           var coords = loader.children[0].children[0].attributes.Vertex.elements;
+           var lines = [];
+           for (i=0; i<coords.length; i+=3) {
+               lines.push(new THREE.Vector3(coords[i], coords[i+1], coords[i+2]));
+           }
+           lines = spherizeLines(lines, 1/64);
+           var lineGeo = new THREE.Geometry();
+           for (var i=0; i<lines.length; i++) {
+               lineGeo.vertices.push(new THREE.Vertex(lines[i]));
+           }
+           var lineMesh = new THREE.Line(lineGeo, material);
+           lineMesh.type = THREE.Lines;
+           lineMesh.scale.x = lineMesh.scale.y = lineMesh.scale.z = 0.0000315 + offset*0.0000001;
+           lineMesh.rotation.x = -Math.PI/2;
+           lineMesh.rotation.z = Math.PI;
+           lineMesh.matrixAutoUpdate = false;
+           lineMesh.updateMatrix();
+           return lineMesh;
+       }
+
+       function createPoints() {
 
                var subgeo = new THREE.Geometry();
-               console.log(gridGeo);
 
                for (i = 0; i < gridGeo.vertices.length; i ++) {
                    var x = gridGeo.vertices[i].position.x;
@@ -286,7 +403,6 @@ angular.module('nusic.app.globe').service('globe', function() {
            }
 
            function onWindowResize( event ) {
-               console.log('resize');
                camera.aspect = window.innerWidth / window.innerHeight;
                camera.updateProjectionMatrix();
                renderer.setSize( window.innerWidth, window.innerHeight );
@@ -299,7 +415,7 @@ angular.module('nusic.app.globe').service('globe', function() {
            }
 
            function animate () {
-//               requestAnimationFrame(animate);
+               requestAnimationFrame(animate);
                render();
            }
 
@@ -326,7 +442,7 @@ angular.module('nusic.app.globe').service('globe', function() {
            this.scene = scene;
            this.animate = animate;
            this.modelLoader = modelLoader;
-
+           this.init = init;
            return this;
 
 

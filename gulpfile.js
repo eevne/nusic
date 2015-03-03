@@ -19,6 +19,7 @@ gulp.task('modules', function () {
         'app/**/*.js',
         'app/**/module.js',
         '!**/js/libs/**',
+        '!**/js/spherize/**',
         '!app/**/*.min.js'
     ])
         .pipe(concat('combined.js', {newLine: ';\n'}))
@@ -36,11 +37,13 @@ gulp.task('images', function () {
 gulp.task('libs', function () {
     gulp.src([
         'bower_components/angular/angular.min.js',
-//        'bower_components/webgl-globe/globe/third-party/*.js',
-//        'bower_components/webgl-globe/globe/*.js',
-        'bower_components/webgl-globe/globe-vertex-texture/shaders.js',
-        'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/*.js',
-        'bower_components/webgl-globe/globe-vertex-texture/third-party/*.js'
+        'app/assets/js/spherize/*.js',
+        'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/ThreeWebGL.js',
+        'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/ThreeExtras.js',
+        'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/RequestAnimationFrame.js',
+        'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/Detector.js',
+        'bower_components/webgl-globe/globe-vertex-texture/third-party/Tween.js',
+        'bower_components/webgl-globe/globe-vertex-texture/shaders.js'
     ])
         .pipe(concat('vendor.js', {newLine: ';\n'}))
         .pipe(gulp.dest('app/assets/js/libs'));
