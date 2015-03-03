@@ -19,7 +19,7 @@
     "tests"
   ],
   "dependencies": {
-    "three.js": "*",
-    "angular": "~1.3.14"
+    "angular": "~1.3.14",
+    "webgl-globe": "dataarts/webgl-globe"
   }
 }

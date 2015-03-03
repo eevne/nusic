@@ -14,7 +14,7 @@ gulp.task('connect', function () {
     });
 });
 
-gulp.task('modules', function(){
+gulp.task('modules', function () {
     gulp.src([
         'app/**/*.js',
         'app/**/module.js',
@@ -25,13 +25,26 @@ gulp.task('modules', function(){
         .pipe(gulp.dest('app/assets/js/libs'));
 });
 
+gulp.task('images', function () {
+    gulp.src([
+        'bower_components/webgl-globe/globe/*.jpg',
+        'bower_components/webgl-globe/globe/*.json'
+    ])
+        .pipe(gulp.dest('app/assets/images'));
+});
+
 gulp.task('libs', function () {
     gulp.src([
-        'bower_components/three.js/three.min.js',
-        'bower_components/angular/angular.min.js'
+        'bower_components/angular/angular.min.js',
+//        'bower_components/webgl-globe/globe/third-party/*.js',
+//        'bower_components/webgl-globe/globe/*.js',
+        'bower_components/webgl-globe/globe-vertex-texture/shaders.js',
+        'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/*.js',
+        'bower_components/webgl-globe/globe-vertex-texture/third-party/*.js'
     ])
         .pipe(concat('vendor.js', {newLine: ';\n'}))
         .pipe(gulp.dest('app/assets/js/libs'));
 });
 
-gulp.task('default', ['modules', 'libs', 'connect']);
+gulp.task('default', ['modules', 'libs', 'images', 'connect']);
+gulp.task('dev', ['modules', 'connect']);
