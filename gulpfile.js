@@ -42,8 +42,7 @@ gulp.task('libs', function () {
         'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/ThreeExtras.js',
         'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/RequestAnimationFrame.js',
         'bower_components/webgl-globe/globe-vertex-texture/third-party/Three/Detector.js',
-        'bower_components/webgl-globe/globe-vertex-texture/third-party/Tween.js',
-        'bower_components/webgl-globe/globe-vertex-texture/shaders.js'
+        'bower_components/webgl-globe/globe-vertex-texture/third-party/Tween.js'
     ])
         .pipe(concat('vendor.js', {newLine: ';\n'}))
         .pipe(gulp.dest('app/assets/js/libs'));

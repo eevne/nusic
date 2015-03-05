@@ -1,6 +1,7 @@
 angular.module('nusic.app.globe').service('atmosphere', function(){
     
-    this.create = function(globe){
+    this.create = function(){
+        var geometry = new THREE.Sphere(200, 40, 30);
         var shader = {
             uniforms: {},
             vertexShader: [
@@ -28,7 +29,7 @@ angular.module('nusic.app.globe').service('atmosphere', function(){
         });
 
 
-        var mesh = new THREE.Mesh(globe, material);
+        var mesh = new THREE.Mesh(geometry, material);
         mesh.scale.x = mesh.scale.y = mesh.scale.z = 1.1;
         mesh.flipSided = true;
         mesh.matrixAutoUpdate = false;
