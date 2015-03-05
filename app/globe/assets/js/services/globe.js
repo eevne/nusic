@@ -82,14 +82,7 @@ angular.module('nusic.app.globe').service('globe', function(continents, country,
                    }
                };
 
-               data.getCoast().then(function(response)
-               {
-                   $log.log('ok', response);
-               }, function()
-               {
-                   $log.log('bad');
-                   
-               });
+             
                container.style.color = '#fff';
                container.style.font = '13px/20px Arial, sans-serif';
 
@@ -106,18 +99,24 @@ angular.module('nusic.app.globe').service('globe', function(continents, country,
                scene = new THREE.Scene();
                sceneAtmosphere = new THREE.Scene();
 
-               var continentsShader = Shaders2['continents'];
-               var continentsUniforms = THREE.UniformsUtils.clone(continentsShader.uniforms);
+//               var continentsShader = Shaders2['continents'];
+//               var continentsUniforms = THREE.UniformsUtils.clone(continentsShader.uniforms);
 
-               var continentsMaterial = new THREE.MeshShaderMaterial({
-                   uniforms: continentsUniforms,
-                   vertexShader: continentsShader.vertexShader,
-                   fragmentShader: continentsShader.fragmentShader
+//               var continentsMaterial = new THREE.MeshShaderMaterial({
+//                   uniforms: continentsUniforms,
+//                   vertexShader: continentsShader.vertexShader,
+//                   fragmentShader: continentsShader.fragmentShader
+//               });
+
+               data.getData().then(function(data) {
+                   var coastData = data[0].data;
+                   var continentsData = data[1].data;
+                   var countriesData = data[2].data;
+                   scene.addObject(coast.create(coastData));
+                   scene.addObject(continents.create(continentsData));
+                   scene.addObject(country.create(countriesData));
                });
-               // add continents on top of black earth sphere
-               scene.addObject(continents.create());
-               scene.addObject(country.create());
-               scene.addObject(coast.create());
+               
 
                var geometry = new THREE.Sphere(200, 40, 30);
 
