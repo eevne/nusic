@@ -1,4 +1,4 @@
-angular.module('nusic.app.globe').directive('nusicGlobe', function (continents, globe) {
+angular.module('nusic.app.globe').directive('nusicGlobe', function (continents, globe, $timeout) {
     return {
         restrict: 'E',
         templateUrl: 'globe/assets/partials/nusic-globe.html',
@@ -7,12 +7,16 @@ angular.module('nusic.app.globe').directive('nusicGlobe', function (continents, 
         },
         link: function (scope, element) {
 
-            var globe3d = globe.createGlobe(element[0]);
+            globe.createGlobe(element[0]);
 
+            
+            globe.navigateTo("37", "-120");
 
-            globe3d.init();
+            $timeout(function(){
 
-            globe3d.animate();
+                globe.navigateTo("37", "120");
+            }, 3000);
+
         }
     }
 
