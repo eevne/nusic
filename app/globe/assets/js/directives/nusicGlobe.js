@@ -14,8 +14,14 @@ angular.module('nusic.app.globe').directive('nusicGlobe', function (continents, 
 
             $timeout(function(){
 
+                globe.setOutlineColor(0x00ffff);
                 globe.navigateTo("37", "120");
             }, 3000);
+
+            $timeout(function(){
+
+//                globe.setOutlineColor(0x00ffff);
+            }, 6000);
 
         }
     }

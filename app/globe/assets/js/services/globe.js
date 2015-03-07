@@ -1,5 +1,6 @@
-angular.module('nusic.app.globe').service('globe', function (continents, country, coast, atmosphere, data, earth, $window) {
+angular.module('nusic.app.globe').service('globe', function (continents, country, coast, atmosphere, data, earth, $window,$log) {
 
+    var countriesObject, coastObject;
     var animDuration = 3000; // carousel anim duration
 
     var startTime;
@@ -124,10 +125,12 @@ angular.module('nusic.app.globe').service('globe', function (continents, country
             var coastData = data[0].data;
             var continentsData = data[1].data;
             var countriesData = data[2].data;
-            
-            scene.addObject(coast.create(coastData));
+
+            coastObject = coast.create(coastData);
+            countriesObject = country.create(countriesData);
+            scene.addObject(coastObject);
+            scene.addObject(countriesObject);
             scene.addObject(continents.create(continentsData));
-            scene.addObject(country.create(countriesData));
         });
 
         scene.addObject(earth.create());
@@ -270,6 +273,12 @@ angular.module('nusic.app.globe').service('globe', function (continents, country
         target.y = location.y;
         target.x = location.x;
     };
+    
+    this.setOutlineColor = function(color)
+    {
+        coastObject.materials[0].color = new THREE.Color(color);
+        countriesObject.materials[0].color = new THREE.Color(color);
+    }
 
     
 });
